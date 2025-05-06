@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="Cache-Control" content="no-cache" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="format-detection" content="telephone=no" />
+<link rel="icon" type="image/ico" href="favicon.ico" />
+<link rel="SHORTCUT ICON" href="favicon.ico" />
+<link href="vendor/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet" />
+<link href="vendor/bootstrap-icons/1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+<link rel="stylesheet" href="css/main.css" />
+<title>登录 - 办公助手</title>
+<style>
+	html,
+	body {
+		height: 100%;
+	}
+
+	body {
+		display: flex;
+		align-items: center;
+		padding-top: 40px;
+		padding-bottom: 40px;
+		background-color: #f5f5f5;
+	}
+
+	.form-signin {
+		width: 100%;
+		max-width: 330px;
+		padding: 15px;
+		margin: auto;
+	}
+
+	.form-signin .checkbox {
+		font-weight: 400;
+	}
+
+	.form-signin .form-floating:focus-within {
+		z-index: 2;
+	}
+
+	.form-signin input[type="email"] {
+		margin-bottom: -1px;
+		border-bottom-right-radius: 0;
+		border-bottom-left-radius: 0;
+	}
+
+	.form-signin input[type="password"] {
+		margin-bottom: 10px;
+		border-top-left-radius: 0;
+		border-top-right-radius: 0;
+	}
+
+	
+  </style>
+</head>
+<body class="text-center">
+	<main class="form-signin">
+		<form id="login">
+			<img class="mb-4" src="img/logo_256x256.png" alt="" width="128" height="128">
+			<h1 class="h5 mb-3 fw-normal">欢迎来到短信助手</h1>
+
+			<div class="form-floating">
+				<input type="username" class="form-control" id="username" placeholder="请输入用户名">
+				<label for="username">用户名</label>
+			</div>
+			<div class="form-floating">
+				<input type="password" class="form-control" id="password" placeholder="请输入密码">
+				<label for="password">密码</label>
+			</div>
+
+			<div class="checkbox mb-3">
+				<label>
+					<input type="checkbox" name="remember" value="false"> 记住我
+				</label>
+			</div>
+
+			<button class="w-100 btn btn-lg btn-primary" type="submit">登录</button>
+			<p class="mt-5 mb-3 text-muted">&copy; 2012–2025</p>
+		</form>
+	</main>
+
+	<div class="position-fixed top-50 start-50 p-3" style="z-index: 1100">
+		<div id="liveToast" class="toast text-center bg-dark" data-bs-autohide="true" data-bs-delay="3000">
+			<div class="toast-body text-light">
+			</div>
+		</div>
+	</div>
+
+	<div id="loading"></div>
+	
+	<script src="vendor/jquery-3.7.1.min.js"></script>
+	<script src="vendor/bootstrap/5.3.3/js/bootstrap.min.js"></script>
+	<script src="vendor/layer/layer.js"></script>
+	<script type="text/javascript">
+		$(document).ready(function(){
+			// 设置已经输入过的用户名
+			if (window.localStorage && window.localStorage.getItem("sms_user") != null) {
+				$("#username").val(window.localStorage.getItem("sms_user"));
+			}
+							
+			// 校验数据&异步提交表单
+			$("#login").submit(function(e){
+				e.preventDefault();
+		
+				if (vaild_data()) {
+					var username = $("#username").val();
+					var password = $("#password").val();
+					
+					$.ajax({
+						type: "GET",
+						url: "api/login.php",
+						data:  {"do": "login", "username": username, "password": password},
+						dataType: "json",
+						beforeSend: function(xhr) {
+							$("#loading").show();
+						},
+						success: function(json) {
+							if (json.status == "ok") {
+								// 登录成功
+								if (window.localStorage) {
+									window.localStorage.setItem("sms_user", username);
+									window.localStorage.setItem("sms_token", json.token);
+									
+									layer.msg("欢迎回来！", function(){
+										back();
+									});
+								} else {
+									layer.msg("浏览器不支持本地存储，登录失败！", function(){
+										back();
+									});
+								}
+							} else {
+								// 登录失败
+								layer.msg(json.message);
+							}
+						},
+						error: function(xhr, textStatus) {
+							console.log(xhr);
+						},
+						complete: function() {
+							$("#loading").hide();
+						}
+					});
+				}
+		
+				return false;
+			});
+		});
+		
+		/**
+		 * name 检查表单数据有效性
+		 */
+		function vaild_data() {
+			$('.form-group').removeClass('has-error');
+			$('.help-block').text("");
+			
+			var bValid = true;
+			
+			bValid = bValid && checkLength($("#username"), "请输入用户名", 1, 16 );
+			bValid = bValid && checkLength($("#password"), "请输入密码", 1, 16 );
+			
+			return bValid;
+		}
+		
+		/**
+		* name 检查长度
+		*/
+		function checkLength( selector, n, min, max ) {
+			var o = $(selector);
+			
+			if ( o.val().length > max || o.val().length < min ) {
+				toast(n);
+				return false;
+			} else {
+				return true;
+			}
+		}
+
+		function toast(message) {
+			var toast = document.getElementById('liveToast')
+			if (toast) {
+				toast.querySelector('.toast-body').innerHTML = message;
+				var instance = new bootstrap.Toast(toast)
+				instance.show()
+			}	  
+		}
+		
+		function getQueryVariable(variable) {
+			var query = window.location.search.substring(1);
+			var vars = query.split("&");
+			for (var i=0;i<vars.length;i++) {
+				var pair = vars[i].split("=");
+				if(pair[0] == variable) {return pair[1];}
+			}
+			return(false);
+		}
+		
+		function back() {
+			// if (getQueryVariable("rt") == "close") {
+			// 	var index = parent.layer.getFrameIndex(window.name);
+			// 	parent.layer.close(index);
+			// } else if (window.history.length > 1) {
+			// 	window.history.back();
+			// } else {
+			 	window.location.href = 'index.html';
+			// }
+		}
+	</script>
+</body>
+</html>
