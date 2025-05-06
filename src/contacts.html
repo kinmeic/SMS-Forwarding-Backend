@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="Cache-Control" content="no-cache" />
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="format-detection" content="telephone=no" />
+	<link rel="icon" type="image/ico" href="favicon.ico" />
+	<link rel="SHORTCUT ICON" href="favicon.ico" />
+	<link href="vendor/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet" />
+	<link href="vendor/bootstrap-icons/1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+	<link rel="stylesheet" href="css/main.css" />
+	<title>通讯录 - 短信助手</title>
+</head>
+<body>
+	<header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0">
+		<a class="navbar-brand col-md-3 col-lg-2 me-0 px-3 fs-6" href="."><i class="bi bi-chat-left-text"></i> 短信助手</a>
+		<button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu">
+			<span class="navbar-toggler-icon"></span>
+		</button>
+		<div class="input-group">
+			<input class="form-control form-control-dark rounded-0 border-0" type="text" id="search" placeholder="搜索">
+			<button class="btn btn-secondary btn-reset text-light rounded-0 border-0 d-none" type="button"><i class="bi bi-x-circle"></i> 重置</button>
+		</div>
+		<div class="navbar-nav">
+			<div class="nav-item text-nowrap">
+				<a class="nav-link px-3" href="#" onclick="logout()">注销登录<span class="username"></span></a>
+			</div>
+		</div>
+	</header>
+	
+	<div class="container-fluid">
+		<div class="row">
+			<nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+				<div class="position-sticky pt-3 pb-3 sidebar-sticky">
+					<ul class="nav flex-column mb-auto">
+
+					</ul>
+				</div>
+			</nav>
+
+			<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+				<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+					<h2>通讯录</h2>
+					<div class="btn-toolbar mb-2 mb-md-0">
+                        <button type="button" class="btn btn-sm btn-outline-primary me-2" data-bs-toggle="offcanvas" data-bs-target="#offcanvas-add-contact" aria-controls="offcanvas-add-contact">
+                            <i class="bi bi-plus"></i>
+                            添加联系人
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary me-2" onclick="loadContactData()">
+                            <i class="bi bi-arrow-repeat"></i>
+                            刷新
+                        </button>
+					</div>
+				</div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped table-sm align-middle mt-3" id="contactTable">
+                        <thead>
+                            <tr>
+                                <th class="col-1">操作</th>
+                                <th class="col-1">#</th>
+                                <th>姓名</th>
+								<th>手机号</th>
+                                <th>备注</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            
+                        </tbody>
+                    </table>
+                    <nav>
+                        <ul class="pagination"></ul>
+                    </nav>
+                </div>
+			</main>
+		</div>
+	</div>
+
+	<div class="offcanvas offcanvas-end" id="offcanvas-add-contact">
+		<div class="offcanvas-header">
+			<h5 class="offcanvas-title">添加联系人</h5>
+			<button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+		</div>
+		<div class="offcanvas-body">
+            <div class="mb-3 mt-2">
+				<label class="form-label" for="add_contact_name">姓名</label>
+				<input type="text" class="form-control" id="add_contact_name" required>
+			</div>
+			<div class="mb-3 mt-2">
+				<label class="form-label" for="add_phone_number">手机号</label>
+				<input type="text" class="form-control" id="add_phone_number" required>
+			</div>
+			<div class="mb-3">
+				<label class="form-label" for="add_remark">备注</label>
+				<input type="text" class="form-control" id="add_remark" maxlength="20">
+			</div>
+			<button type="button" class="btn btn-primary" onclick="add()">添加</button>
+		</div>
+	</div>
+
+	<div class="offcanvas offcanvas-end" id="offcanvas-edit-contact">
+		<input type="hidden" id="edit_contact_id">
+		<div class="offcanvas-header">
+			<h5 class="offcanvas-title">编辑手机号</h5>
+			<button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+		</div>
+		<div class="offcanvas-body">
+            <div class="mb-3 mt-2">
+                <label class="form-label" for="edit_contact_name">姓名</label>
+                <input type="text" class="form-control" id="edit_contact_name"></input>
+			</div>
+			<div class="mb-3 mt-2">
+				<label class="form-label" for="edit_phone_number">手机号</label>
+				<input type="text" class="form-control" id="edit_phone_number">
+			</div>
+			<div class="mb-3">
+				<label class="form-label" for="edit_remark">备注</label>
+				<input type="text" class="form-control" id="edit_remark" maxlength="20">
+			</div>
+			<button type="button" class="btn btn-primary" onclick="edit()">更新</button>
+			<button type="button" class="btn btn-danger" onclick="remove()">删除</button>
+		</div>
+	</div>
+
+	<div id="loading"></div>
+	
+	<script src="vendor/jquery-3.7.1.min.js"></script>
+	<script src="vendor/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+	<script src="vendor/layer/layer.js"></script>
+	<script type="text/javascript">
+		document.write('<script src="js\/common.js?r=' + Math.random() + '"><\/script>');
+        
+        var searchTimer;
+
+		$(document).ready(function(){
+			// 设置菜单
+			setMenu();
+
+            // 设置搜索提示
+			$('#search').attr('placeholder', '输入联系人信息...');
+			
+			checkUserRole(init);
+		});
+		
+		function init() {
+			loadContactData();
+		}
+
+        function loadContactData() {
+            var page = getQuery('page');
+			var limit = 50;
+            var keyword = $('#search').val();
+
+            $('#contactTable tbody').html('<tr class="placeholder-glow">'
+					+ '<td><span class="placeholder col-12"></span></td>'
+                    + '<td><span class="placeholder col-12"></span></td>'
+                    + '<td><span class="placeholder col-12"></span></td>'
+					+ '<td><span class="placeholder col-12"></span></td>'
+					+ '<td><span class="placeholder col-12"></span></td>'
+				+ '</tr>');
+
+            $.post('api/user.php', {
+				'do': 'get_contacts',
+                'page': page || 1,
+                'limit': limit,
+                'keyword': keyword,
+				'token': getStorage('sms_token')
+			}, function(json) {
+				if (json.status == 'ok') {
+					var html_rows = '';
+					var html_page = '';
+
+					var tpl = '<tr>'
+						+ '	<td>'
+						+ '		<a class="btn btn-link btn-sm btn-edit" data-id="{0}" href="javascript:;"><i class="bi bi-pencil"></i></a>'
+                        + '		<a class="btn btn-link btn-sm btn-chat" data-id="{0}" href="javascript:;"><i class="bi bi-chat-dots"></i></a>'
+						+ '	</td>'
+						+ '	<td>#{0}</td>'
+						+ '	<td>{1}</td>'
+						+ '	<td>{2}</td>'
+						+ '	<td>{3}</td>'
+						+ '</tr>';
+                    
+					for(const row of json.data) {
+						html_rows += tpl.Format(
+							row.id,
+							row.name,
+							row.mobile,
+							row.remark || ''
+						);
+					}
+
+					if (json.pages > 1) {
+						var page_tmp = '<li class="page-item">'
+								+ '	<a href="javascript:loadData({0});" class="page-link">{1}</a>'
+								+ '</li>';
+
+						if (json.page <= 1) {
+							html_page += '<li class="page-item disabled"><span class="page-link">上一页</span></li>';
+						} else {
+							html_page += page_tmp.Format(1, '&laquo;');
+							html_page += page_tmp.Format(json.page - 1, '上一页');
+						}
+
+						html_page += '<li class="page-item"><span class="page-link">第{0}/{1}页</span></li>'.Format(json.page, json.pages);
+
+						if (json.page >= json.pages) {
+							html_page += '<li class="page-item disabled"><span class="page-link">下一页</span></li>';
+						} else {
+							html_page += page_tmp.Format(json.page + 1, '下一页');
+							html_page += page_tmp.Format(json.pages, '&raquo;');
+						}
+					}
+					else if (json.total == 0) {
+						html_rows += '<tr><td class="text-center" colspan="5">暂无数据</td></tr>';
+					}
+					
+					$('#contactTable tbody').html(html_rows);
+					$('.pagination').html(html_page);
+				}
+				else {
+					layer.msg(json.message);
+				}
+			}, 'json')
+            .fail(function(e) {
+                console.log(e);
+            });
+        }
+
+		$('#contactTable').delegate('.btn-edit', 'click', function(e){
+			var id = $(this).attr('data-id');
+
+			$.ajax({
+				type: "POST",
+				url: "api/user.php",
+				data: {
+					'do': "get_contact",
+					'id': id,
+					token: getStorage('sms_token')
+				},
+				dataType: "json",
+				beforeSend: function(xhr) {
+					$("#loading").show();
+				},
+				success:function(json) {
+					if (json.status == 'ok') {
+						$('#edit_contact_id').val(id);
+                        $('#edit_contact_name').val(json.data.name);
+						$('#edit_phone_number').val(json.data.mobile);
+						$('#edit_remark').val(json.data.remark);
+						$('#offcanvas-edit-contact').offcanvas('show');
+					}
+				},
+				error: function(xhr, textStatus) {
+					console.log(xhr);
+				},
+				complete: function() {
+					$("#loading").hide();
+				}
+			})
+		});
+
+        $('#contactTable').delegate('.btn-chat', 'click', function(e){
+            var id = $(this).attr('data-id');
+
+            $.ajax({
+                type: "POST",
+                url: "api/user.php",
+                data: {
+                    'do': "get_contact",
+                    'id': id,
+                    token: getStorage('sms_token')
+                },
+                dataType: "json",
+                beforeSend: function(xhr) {
+                    $("#loading").show();
+                },
+                success: function(json) {
+					if (json.status == 'ok') {
+						window.location.href = 'send.html?&mobile=' + json.data.mobile;
+					} else {
+						layer.msg(json.message);
+					}
+				},
+				error: function(xhr, textStatus) {
+					console.log(xhr);
+				},
+				complete: function() {
+					$("#loading").hide();
+				}
+            })
+        });
+
+		function add() {
+			var params = {
+				'do': 'add_contact',
+                'name': $('#add_contact_name').val(),
+				'mobile': $('#add_phone_number').val(),
+				'remark': $('#add_remark').val(),
+				'token': getStorage("sms_token")
+			};
+
+			if (!/^\+?\d+$/.test(params.mobile)) {
+                layer.msg('请输入有效的收件人手机号');
+				return;
+            }
+
+			$.ajax({
+				type: "POST",
+				url: "api/user.php",
+				data: params,
+				dataType: "json",
+				beforeSend: function(xhr) {
+					$("#loading").show();
+				},
+				success: function(json) {
+					if (json.status == 'ok') {
+						layer.msg(json.message);
+						// 清空表单
+                        $('#edit_contact_name').val('');
+						$('#add_phone_number').val('');
+                        $('#add_remark').val('');
+						// 关闭
+						$('#offcanvas-add-contact').offcanvas('hide');
+						// 刷新
+						loadContactData();
+					} else {
+						layer.msg(json.message);
+					}
+				},
+				error: function(xhr, textStatus) {
+					console.log(xhr);
+				},
+				complete: function() {
+					$("#loading").hide();
+				}
+			});
+		}
+
+		function edit() {
+			var params = {
+				'do': 'edit_contact',
+				'id': $('#edit_contact_id').val(),
+                'name': $('#edit_contact_name').val(),
+                'mobile': $('#edit_phone_number').val(),
+				'remark': $('#edit_remark').val(),
+				'token': getStorage("sms_token")
+			};
+
+			$("#loading").show();
+
+			$.post('api/user.php', params, function(json) {
+				if (json.status == 'ok') {
+					layer.msg(json.message);
+					$('#offcanvas-edit-contact').offcanvas('hide');
+					// 刷新
+					loadContactData();
+				} else {
+					layer.msg(json.message);
+				}
+			}, 'json')
+			.fail(function(e) {
+				console.log(e);
+			})
+			.always(function() {
+				$("#loading").hide();
+			});
+		}
+
+		function remove() {
+			layer.confirm('您确定要删除这条记录吗？', {
+				btn: ['确定', '取消'] //按钮
+			}, function(index) {
+				$.ajax({
+					type: "POST",
+					url: "api/user.php",
+					data: {
+						'do': "del_contact",
+						'id': $('#edit_contact_id').val(),
+						token: getStorage('sms_token')
+					},
+					dataType: "json",
+					beforeSend: function(xhr) {
+						$("#loading").show();
+					},
+					success: function(json) {
+						layer.msg(json.message);
+
+						if (json.status == "ok") {
+                            $('#offcanvas-edit-contact').offcanvas('hide');
+							loadContactData();
+						}
+					},
+					error: function(xhr, textStatus) {
+						console.log(xhr);
+					},
+					complete: function() {
+						$("#loading").hide();
+					}
+				});
+
+				layer.close(index);
+			});
+		}
+
+        $('#search').keypress(function(e){
+			if (e.keyCode == 13) {
+				loadContactData();
+			}
+		}).bind('input propertychange', function(){
+			setResetButton();
+
+			if (searchTimer) {
+				clearTimeout(searchTimer);
+			}
+
+			searchTimer = setTimeout(loadContactData, 600);
+		});
+
+		$('.btn-reset').click(function(){
+			$('#search').val('');
+			loadContactData();
+			setResetButton();
+		});
+
+		function setResetButton() {
+			var keyword = $('#search').val();
+
+			if (keyword.length == 0 && !$('.btn-reset').hasClass('d-none')) {
+				$('.btn-reset').addClass('d-none');
+			} else if (keyword.length > 0 && $('.btn-reset').hasClass('d-none')) {
+				$('.btn-reset').removeClass('d-none');
+			}
+		}
+	</script>
+</body>
+</html>

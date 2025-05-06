@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="Cache-Control" content="no-cache" />
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="format-detection" content="telephone=no" />
+	<link rel="icon" type="image/ico" href="favicon.ico" />
+	<link rel="SHORTCUT ICON" href="favicon.ico" />
+	<link href="vendor/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet" />
+	<link href="vendor/bootstrap-icons/1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+	<link rel="stylesheet" href="css/main.css" />
+	<title>推送管理 - 短信助手</title>
+</head>
+<body>
+	<header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0">
+		<a class="navbar-brand col-md-3 col-lg-2 me-0 px-3 fs-6" href="."><i class="bi bi-chat-left-text"></i> 短信助手</a>
+		<button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu">
+			<span class="navbar-toggler-icon"></span>
+		</button>
+		<div class="input-group">
+			
+		</div>
+		<div class="navbar-nav">
+			<div class="nav-item text-nowrap">
+				<a class="nav-link px-3" href="#" onclick="logout()">注销登录<span class="username"></span></a>
+			</div>
+		</div>
+	</header>
+	
+	<div class="container-fluid">
+		<div class="row">
+			<nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+				<div class="position-sticky pt-3 pb-3 sidebar-sticky">
+					<ul class="nav flex-column mb-auto">
+
+					</ul>
+				</div>
+			</nav>
+
+			<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+				<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+					<h2>推送管理</h2>
+					<div class="btn-toolbar mb-2 mb-md-0">
+                        
+					</div>
+				</div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between flex-nowrap">
+                                    <h5 class="card-title mb-3"><i class="bi bi-telegram"></i> Telegram 配置</h5>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" role="switch" id="switchEnableTelegram">
+                                        <label class="form-check-label" for="switchEnableTelegram">启用</label>
+                                    </div>                              
+                                </div>
+                                
+                                <div class="form-floating mb-3">
+                                    <input id="telegram_token" class="form-control" placeholder="">
+                                    <label for="telegram_token">TOKEN</label>
+                                </div>
+                                <div class="form-floating mb-3">
+                                    <input id="telegram_chatid" class="form-control" placeholder="">
+                                    <label for="telegram_chatid">Chat ID</label>
+                                </div>
+                                <button class="btn btn-outline-info float-end" onclick="testTelegram()">测试</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between flex-nowrap">
+                                    <h5 class="card-title mb-3"><i class="bi bi-messenger"></i> Gotify 配置</h5>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" role="switch" id="switchEnableGotify">
+                                        <label class="form-check-label" for="switchEnableGotify">启用</label>
+                                    </div>  
+                                </div>
+                                <div class="form-floating mb-3">
+                                    <input id="gotify_url" class="form-control" placeholder="">
+                                    <label for="gotify_url">API URL</label>
+                                </div>
+                                <div class="form-floating mb-3">
+                                    <input id="gotify_token" class="form-control" placeholder="">
+                                    <label for="gotify_token">APP TOKEN</label>
+                                </div>
+                                <button class="btn btn-outline-info float-end" onclick="testGotify()" disabled>测试</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between flex-nowrap">
+                            <h5 class="card-title mb-3"><i class="bi bi-envelope-fill"></i> 邮件配置</h5>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" id="switchEnableMail">
+                                <label class="form-check-label" for="switchEnableMail">启用</label>
+                            </div>  
+                        </div>
+                        <div class="form-floating">
+                            <input id="mail_address" class="form-control" placeholder="">
+                            <label for="mail_address">邮箱地址</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <button class="btn btn-primary" type="button" id="btn-send" onclick="save()">保存</button>
+                </div>
+			</main>
+		</div>
+	</div>
+
+	<div id="loading"></div>
+	
+	<script src="vendor/jquery-3.7.1.min.js"></script>
+	<script src="vendor/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+	<script src="vendor/layer/layer.js"></script>
+    <script src="vendor/clipboard.min.js" type="text/javascript"></script>
+	<script type="text/javascript">
+		document.write('<script src="js\/common.js?r=' + Math.random() + '"><\/script>');
+
+		$(document).ready(function(){
+			// 设置菜单
+			setMenu();
+			
+			checkUserRole(init);
+		});
+		
+		function init() {
+			loadData();
+		}
+
+        function loadData() {
+            $.ajax({
+                type: "GET",
+                url: "api/sms.php",
+                data:  {
+                    "do": "get_push_data",
+                    "token": getStorage("sms_token")
+                },
+                dataType: "json",
+                beforeSend: function(xhr) {
+                    $("#loading").show();
+                },
+                success: function(json) {
+                    if (json.status == 'ok') {
+                        $('#telegram_token').val(json.data.push_tg_token);
+                        $('#telegram_chatid').val(json.data.push_tg_chatid);
+                        $('#mail_address').val(json.data.push_email);
+                        $('#gotify_url').val(json.data.push_gotify_url);
+                        $('#gotify_token').val(json.data.push_gotify_token);
+
+                        if (json.data.push_tg_enable == 1) {
+                            $('#switchEnableTelegram').prop('checked', true);
+                        }
+
+                        if (json.data.push_email_enable == 1) {
+                            $('#switchEnableMail').prop('checked', true);
+                        }
+
+                        if (json.data.push_gotify_enable == 1) {
+                            $('#switchEnableGotify').prop('checked', true);
+                        }
+                    }
+                },
+                error: function(xhr, textStatus) {
+                    console.log(xhr);
+                },
+                complete: function() {
+                    $("#loading").hide();
+                }
+            });
+        }
+
+        function save() {
+            var params = {
+                'do': 'set_push_data',
+                'push_tg_enable': $('#switchEnableTelegram').prop('checked') ? 1 : 0,
+                'push_tg_token': $('#telegram_token').val(),
+                'push_tg_chatid': $('#telegram_chatid').val(),
+                'push_email_enable': $('#switchEnableMail').prop('checked') ? 1 : 0,
+                'push_email': $('#mail_address').val(),
+                'push_gotify_enable': $('#switchEnableGotify').prop('checked') ? 1 : 0,
+                'push_gotify_url': $('#gotify_url').val(),
+                'push_gotify_token': $('#gotify_token').val(),
+                'token': getStorage('sms_token')
+            };
+
+            // Regex to check if email address is vaild
+            var emailReg = /^[a-zA-Z0-9_-]{4,16}@[a-zA-Z0-9_-]{1,65}\.[a-zA-Z]{2,6}$/;
+            if (params.push_email != '' && !emailReg.test(params.push_email)) {
+                layer.msg('请输入有效的邮箱地址');
+                return;
+            }
+
+            $.ajax({
+                type: "GET",
+                url: "api/sms.php",
+                data: params,
+                dataType: "json",
+                beforeSend: function(xhr) {
+                    $("#loading").show();
+                },
+                success: function(json) {
+                    layer.msg(json.message);
+                },
+                error: function(xhr, textStatus) {
+                    console.log(xhr);
+                },
+                complete: function() {
+                    $("#loading").hide();
+                }
+            });
+        }
+
+        function testTelegram() {
+            const botToken = $('#telegram_token').val();
+            const chatId = $('#telegram_chatid').val();
+            const message = '这是一条来自短信助手的测试消息，能收到吗？';
+
+            $.ajax({
+                url: `https://api.telegram.org/bot${botToken}/sendMessage`,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    chat_id: chatId,
+                    text: message
+                }),
+                success: function(data) {
+                    console.log('消息发送成功:', data);
+                },
+                error: function(xhr, status, error) {
+                    console.error('发送消息失败:', status, error);
+                }
+            });
+        }
+
+        function testGotify() {
+            var api_url = $('#gotify_url').val();
+            var app_token = $('#gotify_token').val();
+
+            $.ajax({
+                url: api_url + '?token=' + app_token,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    title: '来自短信助手的消息',
+                    message: '这是一条测试消息，能收到吗？',
+                    priority: 5
+                }),
+                success: function(data) {
+                    layer.msg('消息发送成功');
+                },
+                error: function(xhr, status, error) {
+                    console.error('发送消息失败:', xhr);
+                }
+            });
+        }
+	</script>
+</body>
+</html>

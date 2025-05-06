@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="Cache-Control" content="no-cache" />
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="format-detection" content="telephone=no" />
+	<link rel="icon" type="image/ico" href="favicon.ico" />
+	<link rel="SHORTCUT ICON" href="favicon.ico" />
+	<link href="vendor/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet" />
+	<link href="vendor/bootstrap-icons/1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+	<link rel="stylesheet" href="css/main.css" />
+	<title>短信管理 - 短信助手</title>
+</head>
+<body>
+	<header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0">
+		<a class="navbar-brand col-md-3 col-lg-2 me-0 px-3 fs-6" href="."><i class="bi bi-chat-left-text"></i> 短信助手</a>
+		<button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu">
+			<span class="navbar-toggler-icon"></span>
+		</button>
+		<div class="input-group">
+			
+		</div>
+		<div class="navbar-nav">
+			<div class="nav-item text-nowrap">
+				<a class="nav-link px-3" href="#" onclick="logout()">注销登录<span class="username"></span></a>
+			</div>
+		</div>
+	</header>
+	
+	<div class="container-fluid">
+		<div class="row">
+			<nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+				<div class="position-sticky pt-3 pb-3 sidebar-sticky">
+					<ul class="nav flex-column mb-auto">
+
+					</ul>
+				</div>
+			</nav>
+
+			<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+				<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+					<h2>短信管理</h2>
+					<div class="btn-toolbar mb-2 mb-md-0">
+                        <button type="button" class="btn btn-sm btn-outline-primary me-2" onclick="refresh()">
+                            <i class="bi bi-arrow-repeat"></i>
+                            刷新
+                        </button>
+					</div>
+				</div>
+
+                <ul class="nav nav-tabs">
+                    <li class="nav-item">
+                        <button class="nav-link active" id="inbox-tab" data-bs-toggle="tab" data-bs-target="#inbox-tab-pane" type="button">收件箱</button>
+                    </li>
+                    <li class="nav-item">
+						<button class="nav-link" id="sendbox-tab" data-bs-toggle="tab" data-bs-target="#sendbox-tab-pane" type="button">发件箱</button>
+					</li>
+                </ul>
+
+                <div class="tab-content">
+                    <div class="tab-pane show active" id="inbox-tab-pane" tabindex="0" data-func="loadInboxData">
+                        <div class="table-responsive">
+                            <table class="table table-hover table-striped table-sm align-middle mt-3" id="inboxTable">
+                                <thead>
+                                    <tr>
+                                        <th class="col-1">操作</th>
+                                        <th class="col-1">#</th>
+                                        <th class="col-2">发件人</th>
+                                        <th class="col-3">消息</th>
+                                        <th class="col-2">收件人</th>
+                                        <th class="col-2">收件时间</th>
+										<th class="col-1">设备</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    
+                                </tbody>
+                            </table>
+                            <nav>
+                                <ul class="pagination"></ul>
+                            </nav>
+                        </div>
+                    </div>
+                    <div class="tab-pane" id="sendbox-tab-pane" tabindex="1" data-func="loadSendboxData">
+                        <div class="table-responsive">
+                            <table class="table table-hover table-striped table-sm align-middle mt-3" id="sendboxTable">
+                                <thead>
+                                    <tr>
+                                        <th class="col-1">操作</th>
+                                        <th class="col-1">#</th>
+                                        <th class="col-2">收件人</th>
+                                        <th>消息</th>
+                                        <th class="col-1">状态</th>
+                                        <th class="col-2">发件人</th>
+                                        <th class="col-2">发件时间</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    
+                                </tbody>
+                            </table>
+                            <nav>
+                                <ul class="pagination"></ul>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+			</main>
+		</div>
+	</div>
+
+	<div id="loading"></div>
+	
+	<script src="vendor/jquery-3.7.1.min.js"></script>
+	<script src="vendor/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+	<script src="vendor/layer/layer.js"></script>
+    <script src="vendor/clipboard.min.js" type="text/javascript"></script>
+	<script type="text/javascript">
+		document.write('<script src="js\/common.js?r=' + Math.random() + '"><\/script>');
+
+		$(document).ready(function(){
+			// 设置菜单
+			setMenu();
+			
+			checkUserRole(init);
+
+            // 定位Tab
+			var urlHash = window.location.hash;
+			if (urlHash) {
+				$('button[data-bs-target="' + urlHash + '"]').tab('show');
+			}
+		});
+
+        // 点击Tab时更新URL
+		$('button[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
+			var target = $(e.target).data('bs-target');
+			var func = $(target).attr('data-func');
+
+			// 更新 URL 哈希值
+			history.replaceState(null, null, target); 
+
+			// 执行data-func指令
+			if (func && window[func]) {
+				id = getQuery('id');
+				window[func]();
+			}
+		});
+		
+		function init() {
+			var urlHash = window.location.hash;
+			if (urlHash && urlHash.length > 1 && urlHash[0] === '#') {
+				var func = $(urlHash).attr('data-func');
+				if (func && window[func]) {
+                    window[func]();
+                }
+			}
+            else{
+                loadInboxData();
+            }
+		}
+
+		function refresh() {
+			var activeTab = $('.nav-tabs button.active').data('bs-target');
+			var func = $(activeTab).attr('data-func');
+
+			if (func && window[func]) {
+				window[func]();
+			}
+		}
+
+        function loadInboxData(page=1) {
+			var limit = 20;
+
+            $('#inboxTable tbody').html('<tr class="placeholder-glow">'
+					+ '<td><span class="placeholder col-12"></span></td>'
+                    + '<td><span class="placeholder col-12"></span></td>'
+                    + '<td><span class="placeholder col-12"></span></td>'
+					+ '<td><span class="placeholder col-12"></span></td>'
+					+ '<td><span class="placeholder col-12"></span></td>'
+					+ '<td><span class="placeholder col-12"></span></td>'
+					+ '<td><span class="placeholder col-12"></span></td>'
+				+ '</tr>');
+
+			$.post('api/sms.php', {
+				'do': 'get_inbox',
+				'page': page,
+				'limit': limit,
+				'token': getStorage('sms_token')
+			}, function(json) {
+				if (json.status == 'ok') {
+					var html_rows = '';
+					var html_page = '';
+
+					var tpl = '<tr>'
+						+ '	<td>'
+						+ '		<a class="btn btn-link btn-sm btn-del" data-id="{0}" href="javascript:;"><i class="bi bi-trash"></i></a>'
+						+ '	</td>'
+						+ '	<td>#{0}</td>'
+						+ '	<td>{1}</td>'
+						+ '	<td>{2}</td>'
+						+ '	<td>{3}</td>'
+						+ '	<td>{4}</td>'
+						+ '	<td>{5}</td>'
+						+ '</tr>';
+					
+					for(const row of json.data) {
+						html_rows += tpl.Format(
+							row.id,
+							row.sender_mobile,
+							row.message,
+							row.receiver_mobile,
+							row.create_at,
+							row.device || ''
+						);
+					}
+
+					if (json.pages > 1) {
+						var page_tmp = '<li class="page-item">'
+								+ '	<a href="javascript:loadInboxData({0});" class="page-link">{1}</a>'
+								+ '</li>';
+
+						if (json.page <= 1) {
+							html_page += '<li class="page-item disabled"><span class="page-link">上一页</span></li>';
+						} else {
+							html_page += page_tmp.Format(1, '&laquo;');
+							html_page += page_tmp.Format(json.page - 1, '上一页');
+						}
+
+						html_page += '<li class="page-item"><span class="page-link">第{0}/{1}页</span></li>'.Format(json.page, json.pages);
+
+						if (json.page >= json.pages) {
+							html_page += '<li class="page-item disabled"><span class="page-link">下一页</span></li>';
+						} else {
+							html_page += page_tmp.Format(json.page + 1, '下一页');
+							html_page += page_tmp.Format(json.pages, '&raquo;');
+						}
+					}
+					else if (json.total == 0) {
+						html_rows += '<tr><td class="text-center" colspan="7">暂无数据</td></tr>';
+					}
+					
+					$('#inboxTable tbody').html(html_rows);
+					$('.pagination').html(html_page);
+				}
+				else {
+					layer.msg(json.message);
+				}
+			}, 'json');
+        }
+
+        function loadSendboxData(page=1) {
+			var limit = 20;
+
+            $('#sendboxTable tbody').html('<tr class="placeholder-glow">'
+					+ '<td><span class="placeholder col-12"></span></td>'
+					+ '<td><span class="placeholder col-12"></span></td>'
+					+ '<td><span class="placeholder col-12"></span></td>'
+					+ '<td><span class="placeholder col-12"></span></td>'
+                    + '<td><span class="placeholder col-12"></span></td>'
+                    + '<td><span class="placeholder col-12"></span></td>'
+                    + '<td><span class="placeholder col-12"></span></td>'
+				+ '</tr>');
+
+			$.post('api/sms.php', {
+				'do': 'get_sendbox',
+				'page': page,
+				'limit': limit,
+				'token': getStorage('sms_token')
+			}, function(json) {
+				if (json.status == 'ok') {
+					var html_rows = '';
+					var html_page = '';
+
+					var tpl = '<tr>'
+						+ '	<td>'
+						+ '		<a class="btn btn-link btn-sm btn-del" data-id="{0}" href="javascript:;"><i class="bi bi-trash"></i></a>'
+						+ '	</td>'
+						+ '	<td>#{0}</td>'
+						+ '	<td>{1}</td>'
+						+ '	<td>{2}</td>'
+						+ '	<td>{3}</td>'
+						+ '	<td>{4}</td>'
+						+ '	<td>{5}</td>'
+						+ '</tr>';
+
+					var status_names = [
+						'待发送',
+						'已发送',
+						'发送失败'
+					];
+					
+					for(const row of json.data) {
+						html_rows += tpl.Format(
+							row.id,
+							row.receiver_mobile,
+							row.message,
+							status_names[row.status],
+							row.sender_mobile,
+							row.create_at
+						);
+					}
+
+					if (json.pages > 1) {
+						var page_tmp = '<li class="page-item">'
+								+ '	<a href="javascript:loadSendboxData({0});" class="page-link">{1}</a>'
+								+ '</li>';
+
+						if (json.page <= 1) {
+							html_page += '<li class="page-item disabled"><span class="page-link">上一页</span></li>';
+						} else {
+							html_page += page_tmp.Format(1, '&laquo;');
+							html_page += page_tmp.Format(json.page - 1, '上一页');
+						}
+
+						html_page += '<li class="page-item"><span class="page-link">第{0}/{1}页</span></li>'.Format(json.page, json.pages);
+
+						if (json.page >= json.pages) {
+							html_page += '<li class="page-item disabled"><span class="page-link">下一页</span></li>';
+						} else {
+							html_page += page_tmp.Format(json.page + 1, '下一页');
+							html_page += page_tmp.Format(json.pages, '&raquo;');
+						}
+					}
+					else if (json.total == 0) {
+						html_rows += '<tr><td class="text-center" colspan="7">暂无数据</td></tr>';
+					}
+					
+					$('#sendboxTable tbody').html(html_rows);
+					$('.pagination').html(html_page);
+				}
+				else {
+					layer.msg(json.message);
+				}
+			}, 'json');
+        }
+
+		$('#inboxTable').delegate('.btn-del', 'click', function(e){
+			var id = $(this).attr('data-id');
+
+			layer.confirm('您确定要删除这条记录吗？', {
+                btn: ['确定', '取消'] //按钮
+            }, function(index) {
+                $.ajax({
+					type: "POST",
+					url: "api/sms.php",
+					data: {
+						'do': "remove_inbox_message",
+						'id': id,
+						token: getStorage('sms_token')
+					},
+					dataType: "json",
+					beforeSend: function(xhr) {
+						$("#loading").show();
+					},
+					success: function(json) {
+						layer.msg(json.message);
+
+						if (json.status == "ok") {
+							loadInboxData();
+						}
+					},
+					error: function(xhr, textStatus) {
+						console.log(xhr);
+					},
+					complete: function() {
+						$("#loading").hide();
+					}
+				});
+
+				layer.close(index);
+            });
+		});
+
+		$('#sendboxTable').delegate('.btn-del', 'click', function(e){
+			var id = $(this).attr('data-id');
+
+			layer.confirm('您确定要删除这条记录吗？', {
+                btn: ['确定', '取消'] //按钮
+            }, function(index) {
+                $.ajax({
+					type: "POST",
+					url: "api/sms.php",
+					data: {
+						'do': "remove_send_task",
+						'id': id,
+						token: getStorage('sms_token')
+					},
+					dataType: "json",
+					beforeSend: function(xhr) {
+						$("#loading").show();
+					},
+					success: function(json) {
+						layer.msg(json.message);
+
+						if (json.status == "ok") {
+							loadSendboxData();
+						}
+					},
+					error: function(xhr, textStatus) {
+						console.log(xhr);
+					},
+					complete: function() {
+						$("#loading").hide();
+					}
+				});
+
+				layer.close(index);
+            });
+		});
+
+        var clipboard = new ClipboardJS('#btn-export', {
+			text: function() {
+                var optimized = $('#mail_optimized').val();
+				if (optimized == '') {
+					layer.msg('优化后内容为空');
+					return '';
+				}
+				else {
+					layer.msg('优化后内容已经复制到剪贴板');
+					return reply_content;
+				}
+			}
+		});
+	</script>
+</body>
+</html>

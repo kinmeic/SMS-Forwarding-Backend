@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="Cache-Control" content="no-cache" />
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="format-detection" content="telephone=no" />
+	<link rel="icon" type="image/ico" href="favicon.ico" />
+	<link rel="SHORTCUT ICON" href="favicon.ico" />
+	<link href="vendor/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet" />
+	<link href="vendor/bootstrap-icons/1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+	<link rel="stylesheet" href="css/main.css" />
+	<title>发送短信 - 短信助手</title>
+</head>
+<body>
+	<header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0">
+		<a class="navbar-brand col-md-3 col-lg-2 me-0 px-3 fs-6" href="."><i class="bi bi-chat-left-text"></i> 短信助手</a>
+		<button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu">
+			<span class="navbar-toggler-icon"></span>
+		</button>
+		<div class="input-group">
+			
+		</div>
+		<div class="navbar-nav">
+			<div class="nav-item text-nowrap">
+				<a class="nav-link px-3" href="#" onclick="logout()">注销登录<span class="username"></span></a>
+			</div>
+		</div>
+	</header>
+	
+	<div class="container-fluid">
+		<div class="row">
+			<nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+				<div class="position-sticky pt-3 pb-3 sidebar-sticky">
+					<ul class="nav flex-column mb-auto">
+
+					</ul>
+				</div>
+			</nav>
+
+			<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+				<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+					<h2>发送短信</h2>
+					<div class="btn-toolbar mb-2 mb-md-0">
+                        <button type="button" class="btn btn-sm btn-outline-danger me-2" onclick="reset()">
+                            <i class="bi bi-arrow-repeat"></i>
+                            重置
+                        </button>
+					</div>
+				</div>
+
+                <div class="form-floating mb-3">
+                    <select id="sender_mobile" class="form-select">
+                        
+                    </select>
+                    <label for="sender_mobile">发件人</label>
+                </div>
+                <div class="form-floating mb-3">
+                    <input id="receiver_mobile" class="form-control" placeholder="">
+                    <label for="receiver_mobile">收件人</label>
+                </div>
+                <div class="form-floating mb-3">
+                    <textarea id="message" class="form-control" style="height: 12em;" placeholder=""></textarea>
+                    <label for="message">短信内容</label>
+                    <div class="form-text">剩余字数: <span id="charCount">70</span></div>
+                </div>
+                <div>
+                    <button class="btn btn-primary" type="button" id="btn-send" onclick="send()">发送</button>
+                </div>
+			</main>
+		</div>
+	</div>
+
+	<div id="loading"></div>
+	
+	<script src="vendor/jquery-3.7.1.min.js"></script>
+	<script src="vendor/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+	<script src="vendor/layer/layer.js"></script>
+	<script type="text/javascript">
+        var maxChars = 70;
+
+		document.write('<script src="js\/common.js?r=' + Math.random() + '"><\/script>');
+
+		$(document).ready(function(){
+			// 设置菜单
+			setMenu();
+			
+			checkUserRole(init);
+		});
+
+        $("#message").on("input", function() {
+            var content = $(this).val();
+            var remaining = maxChars - content.length;
+
+            $('#charCount').text(remaining >= 0 ? remaining : 0);
+
+            if (remaining < 0) {
+                $(this).val(content.substring(0, maxChars));
+            }
+        });
+
+		function init() {
+			loadMobileData();
+
+            // 加载GET参数: mobile
+            var mobile = getQuery('mobile');
+
+            if (mobile != null) {
+                $('#receiver_mobile').val(mobile);
+            }
+		}
+
+        function loadMobileData() {
+            $.post('api/user.php', {
+				'do': 'get_mobiles',
+				'token': getStorage('sms_token')
+			}, function(json) {
+				if (json.status == 'ok') {
+					var html_rows = '';
+					var html_page = '';
+
+					var tpl = '<option value={0}>{1}</option>';
+					var status_names = [
+                        '<span class="text-danger">离线</span>',
+                        '<span class="text-success">在线</span>'
+                    ];
+
+					for(const row of json.data) {
+                        html_rows += tpl.Format(
+							row.mobile,
+                            row.mobile + ' （' + status_names[row.status] + '）'
+						);
+					}
+					
+					$('#sender_mobile').html(html_rows);
+				}
+				else {
+					layer.msg(json.message);
+				}
+			}, 'json')
+            .fail(function(e) {
+                console.log(e);
+            });
+        }
+
+        function send() {
+            var sender_mobile = $('#sender_mobile').val();
+            var receiver_mobile = $('#receiver_mobile').val();
+            var message = $('#message').val();
+
+            if (sender_mobile == '') {
+                layer.msg('请选择发件人');
+            }
+            else if (!/^\+?\d+$/.test(receiver_mobile)) {
+                layer.msg('请输入有效的收件人手机号');
+            }
+            else if (message.length == 0) {
+                layer.msg('请输入短信内容');
+            }
+            else {
+                $.ajax({
+                    type: "POST",
+                    url: "api/sms.php",
+                    data: {
+                        'do': 'send',
+                        'sender_mobile': sender_mobile,
+                        'receiver_mobile': receiver_mobile,
+                        'message': message,
+                        'token': getStorage('sms_token')
+                    },
+                    dataType: "json",
+                    beforeSend: function(xhr) {
+                        $("#loading").show();
+                    },
+                    success: function(json) {
+                        layer.msg(json.message, {anim: 0, time: 500}, function() {
+                            window.location.href = 'sms.html#sendbox-tab-pane';
+                        });
+
+                        if (json.status == 'ok') {
+                            reset();
+                        }
+                    },
+                    error: function(xhr, textStatus) {
+                        console.log(xhr);
+                    },
+                    complete: function() {
+                        $("#loading").hide();
+                    }
+                });
+            }
+        }
+
+        function reset() {
+            $('#receiver_mobile').val('');
+            $('#message').val('');
+            $('#charCount').text(maxChars);
+        }
+	</script>
+</body>
+</html>

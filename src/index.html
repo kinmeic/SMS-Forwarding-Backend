@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="Cache-Control" content="no-cache" />
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="format-detection" content="telephone=no" />
+	<link rel="icon" type="image/ico" href="favicon.ico" />
+	<link rel="shortcut icon" href="favicon.ico" />
+	<link href="vendor/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet" />
+	<link href="vendor/bootstrap-icons/1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+	<link rel="stylesheet" href="css/main.css" />
+	<title>短信助手</title>
+</head>
+<body>
+	<header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0">
+		<a class="navbar-brand col-md-3 col-lg-2 me-0 px-3 fs-6" href="."><i class="bi bi-chat-left-text"></i> 短信助手</a>
+		<button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu">
+			<span class="navbar-toggler-icon"></span>
+		</button>
+		<div class="input-group">
+			
+		</div>
+		<div class="navbar-nav">
+			<div class="nav-item text-nowrap">
+				<a class="nav-link px-3" href="#" onclick="logout()">注销登录<span class="username"></span></a>
+			</div>
+		</div>
+	</header>
+	
+	<div class="container-fluid">
+		<div class="row">
+			<nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+				<div class="position-sticky pt-3 pb-3 sidebar-sticky">
+					<ul class="nav flex-column mb-auto">
+
+					</ul>
+				</div>
+			</nav>
+
+			<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+				<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+					<h2>数据看板</h2>
+					<div class="btn-toolbar mb-2 mb-md-0">
+                        <button type="button" class="btn btn-sm btn-outline-primary me-2" onclick="init()">
+                            <i class="bi bi-arrow-repeat"></i>
+                            刷新
+                        </button>
+					</div>
+				</div>
+
+				<div class="row mb-3">
+					<div class="col-xs-6 col-sm-3 mb-3">
+						<div class="card">
+							<div class="card-body">
+								<div class="d-flex justify-content-between align-items-center">
+									<div>
+										<p class="card-text">收件箱</p>
+										<h5 class="card-title" id="inbox_cnt">-</h5>
+									</div>
+									<i class="bi bi-mailbox fs-1"></i>
+								</div>
+							</div>
+							<div class="card-footer">
+								<a href="sms.html" class="btn btn-link">详情</a>
+							</div>
+						</div>
+					</div>
+					<div class="col-xs-6 col-sm-3 mb-3">
+						<div class="card">
+							<div class="card-body">
+								<div class="d-flex justify-content-between align-items-center">
+									<div>
+										<p class="card-text">发件箱</p>
+										<h5 class="card-title" id="sendbox_cnt">-/-</h5>
+									</div>
+									<i class="bi bi-send fs-1"></i>
+								</div>
+							</div>
+							<div class="card-footer">
+								<a href="sms.html#sendbox-tab-pane" class="btn btn-link">详情</a>
+							</div>
+						</div>
+					</div>
+					<div class="col-xs-6 col-sm-3 mb-3">
+						<div class="card">
+							<div class="card-body">
+								<div class="d-flex justify-content-between align-items-center">
+									<div>
+										<p class="card-text">通讯录</p>
+										<h5 class="card-title" id="contacts_cnt">-</h5>
+									</div>
+									<i class="bi bi-people fs-1"></i>
+								</div>
+							</div>
+							<div class="card-footer">
+								<a href="contacts.html" class="btn btn-link">详情</a>
+							</div>
+						</div>
+					</div>
+					<div class="col-xs-6 col-sm-3 mb-3">
+						<div class="card">
+							<div class="card-body">
+								<div class="d-flex justify-content-between align-items-center">
+									<div>
+										<p class="card-text">号码</p>
+										<h5 class="card-title" id="mobile_cnt">-/-</h5>
+									</div>
+									<i class="bi bi-phone fs-1"></i>
+								</div>
+							</div>
+							<div class="card-footer">
+								<a href="phone.html" class="btn btn-link">详情</a>
+							</div>
+						</div>
+					</div>
+				</div>
+				
+				<div class="table-responsive">
+					<table class="table table-striped table-sm caption-top" id="logTable">
+						<caption>短信日志</caption>
+						<thead class="table-light">
+							<tr>
+								<th class="col-2">时间</th>
+								<th>日志内容</th>
+								<th class="col-1">渠道</th>
+							</tr>
+						</thead>
+						<tbody>
+						</tbody>
+					</table>
+					<nav>
+                        <ul class="pagination"></ul>
+                    </nav>
+				</div>
+			</main>
+		</div>
+	</div>
+
+	<div id="loading"></div>
+	
+	<script src="vendor/jquery-3.7.1.min.js"></script>
+	<script src="vendor/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+	<script src="vendor/layer/layer.js"></script>
+	<script type="text/javascript">
+		document.write('<script src="js\/common.js?r=' + Math.random() + '"><\/script>');
+
+		$(document).ready(function(){
+			// 设置菜单
+			setMenu();
+			
+			checkUserRole(init);
+		});
+		
+		function init() {
+			loadDashboardData();
+			loadLogData();
+		}
+
+		function loadDashboardData() {
+			$('#inbox_cnt').html('<p class="placeholder-glow"><span class="placeholder col-12"></span></p>');
+			$('#sendbox_cnt').html('<p class="placeholder-glow"><span class="placeholder col-12"></span></p>');
+			$('#contacts_cnt').html('<p class="placeholder-glow"><span class="placeholder col-12"></span></p>');
+			$('#mobile_cnt').html('<p class="placeholder-glow"><span class="placeholder col-12"></span></p>');
+
+			$.post('api/dashboard.php', {
+				'do': 'get_info',
+				'token': getStorage('sms_token')
+			}, function(json) {
+				$('#inbox_cnt').html(json.data.inbox_cnt);
+				$('#sendbox_cnt').html(json.data.sendbox_sending_cnt + ' <span class="fs-6 text-secondary">待发送</span> / ' + json.data.sendbox_cnt);
+				$('#contacts_cnt').html(json.data.contacts_cnt);
+				$('#mobile_cnt').html(json.data.mobile_active_cnt + ' <span class="fs-6 text-success">在线</span> / ' + json.data.mobile_cnt);
+			}, 'json')
+            .fail(function(e) {
+                console.log(e);
+            });
+		}
+
+		function loadLogData(page=1) {
+			$('#logTable tbody').html('<tr class="placeholder-glow">'
+					+ '<td><span class="placeholder col-12"></span></td>'
+                    + '<td><span class="placeholder col-12"></span></td>'
+                    + '<td><span class="placeholder col-12"></span></td>'
+				+ '</tr>');
+
+            $.post('api/log.php', {
+				'do': 'get_logs',
+				'page': page || 1,
+				'limit': 30,
+				'token': getStorage('sms_token')
+			}, function(json) {
+				if (json.status == 'ok') {
+					var html_rows = '';
+					var html_page = '';
+
+					var tpl = '<tr>'
+						+ '	<td>{0}</td>'
+						+ '	<td>{1}</td>'
+						+ '	<td>{2}</td>'
+						+ '</tr>';
+                    
+					for(const row of json.data) {
+						html_rows += tpl.Format(
+							row.create_at,
+							row.content,
+							row.channel || '',
+						);
+					}
+
+					if (json.pages > 1) {
+						var page_tmp = '<li class="page-item">'
+								+ '	<a href="javascript:loadData({0});" class="page-link">{1}</a>'
+								+ '</li>';
+
+						if (json.page <= 1) {
+							html_page += '<li class="page-item disabled"><span class="page-link">上一页</span></li>';
+						} else {
+							html_page += page_tmp.Format(1, '&laquo;');
+							html_page += page_tmp.Format(json.page - 1, '上一页');
+						}
+
+						html_page += '<li class="page-item"><span class="page-link">第{0}/{1}页</span></li>'.Format(json.page, json.pages);
+
+						if (json.page >= json.pages) {
+							html_page += '<li class="page-item disabled"><span class="page-link">下一页</span></li>';
+						} else {
+							html_page += page_tmp.Format(json.page + 1, '下一页');
+							html_page += page_tmp.Format(json.pages, '&raquo;');
+						}
+					}
+					else if (json.total == 0) {
+						html_rows += '<tr><td class="text-center" colspan="3">暂无数据</td></tr>';
+					}
+					
+					$('#logTable tbody').html(html_rows);
+					$('.pagination').html(html_page);
+				}
+				else {
+					layer.msg(json.message);
+				}
+			}, 'json')
+            .fail(function(e) {
+                console.log(e);
+            });
+		}
+	</script>
+</body>
+</html>
